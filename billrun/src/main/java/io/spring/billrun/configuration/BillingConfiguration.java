@@ -19,32 +19,24 @@ package io.spring.billrun.configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.spring.billrun.model.Bill;
 import io.spring.billrun.model.Usage;
-import javax.sql.DataSource;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.scope.context.ChunkContext;
-import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.Order;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
-import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.batch.item.database.support.MySqlPagingQueryProvider;
 import org.springframework.batch.item.json.JacksonJsonObjectReader;
 import org.springframework.batch.item.json.JsonItemReader;
 import org.springframework.batch.item.json.builder.JsonItemReaderBuilder;
-import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.task.configuration.EnableTask;
@@ -53,8 +45,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.RowMapper;
 
+import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 @Configuration
@@ -71,7 +67,7 @@ public class BillingConfiguration {
 	private Resource usageResource;
 
 	@Bean
-	public Job job1(ItemReader<Usage> reader, ItemProcessor<Usage, Bill> itemProcessor, ItemWriter<Bill> writer) {
+	public Job job1(ItemReader<Usage> reader, ItemProcessor<Usage, Bill> itemProcessor, ItemWriter<Bill> writer, ItemReader<Bill> jdbcItemReader) {
 		Step step1 = stepBuilderFactory.get("BillProcessing")
 				.<Usage, Bill>chunk(1)
 				.reader(reader)
@@ -79,13 +75,14 @@ public class BillingConfiguration {
 				.writer(writer)
 				.build();
 
-		Step step2 = stepBuilderFactory.get("BillOutput")
-				.tasklet(new Tasklet() {
-					@Override
-					public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-						return null;
-					}
-				}).build();
+		Step step2 = stepBuilderFactory.get("BillSummary").<Bill, Bill>chunk(1).reader(jdbcItemReader).writer(new ItemWriter<Bill>() {
+			@Override
+			public void write(List<? extends Bill> list) throws Exception {
+				for (Bill bill : list) {
+					System.out.println("id=" + bill.getId() + ",firstName=" + bill.getFirstName() + ",lastName=" + bill.getLastName() + ",dataUsage=" + bill.getDataUsage() + ",minutes=" + bill.getMinutes() + ",billAmount=" + bill.getBillAmount());
+				}
+			}
+		}).build();
 
 		return jobBuilderFactory.get("BillJob")
 				.incrementer(new RunIdIncrementer())
@@ -101,28 +98,25 @@ public class BillingConfiguration {
 		reader.setFetchSize(100);
 		reader.setRowMapper(new BillRowMapper());
 		MySqlPagingQueryProvider queryProvider = new MySqlPagingQueryProvider();
-		queryProvider.setSelectClause("id, first_name, last_name, minutes, data_usage,bill_amount");
+		queryProvider.setSelectClause("id, first_name, last_name, sum(minutes) as minutes , sum(data_usage) as data_usage,sum(bill_amount) as bill_amount");
 		queryProvider.setFromClause("from BILL_STATEMENTS");
+		Map<String, Order> map = new HashMap<String, Order>();
+		map.put("id", Order.ASCENDING);
+		queryProvider.setSortKeys(map);
+		queryProvider.setGroupClause("id, first_name, last_name");
+		reader.setQueryProvider(queryProvider);
 
-		reader.setQueryProvider(queryProvider);// 设置排序列
 		return reader;
 	}
 
-	class BillRowMapper implements RowMapper<Bill> {
-
-		/**
-		 * rs一条结果集，rowNum代表当前行
-		 */
-		@Override
-		public Bill mapRow(ResultSet rs, int rowNum) throws SQLException {
-			return new Bill(rs.getLong("id")
-					,rs.getString("first_name")
-					,rs.getString("last_name")
-					,rs.getLong("minutes")
-					,rs.getLong("data_usage")
-					,rs.getDouble("bill_amount"));
-		}
-
+	@Bean
+	public ItemWriter<Bill> jdbcBillWriter(DataSource dataSource) {
+		JdbcBatchItemWriter<Bill> writer = new JdbcBatchItemWriterBuilder<Bill>()
+				.beanMapped()
+				.dataSource(dataSource)
+				.sql("INSERT INTO BILL_STATEMENTS (id, first_name, last_name, minutes, data_usage,bill_amount) VALUES (:id, :firstName, :lastName, :minutes, :dataUsage, :billAmount)")
+				.build();
+		return writer;
 	}
 
 
@@ -141,14 +135,17 @@ public class BillingConfiguration {
 				.build();
 	}
 
-	@Bean
-	public ItemWriter<Bill> jdbcBillWriter(DataSource dataSource) {
-		JdbcBatchItemWriter<Bill> writer = new JdbcBatchItemWriterBuilder<Bill>()
-						.beanMapped()
-				.dataSource(dataSource)
-				.sql("INSERT INTO BILL_STATEMENTS (id, first_name, last_name, minutes, data_usage,bill_amount) VALUES (:id, :firstName, :lastName, :minutes, :dataUsage, :billAmount)")
-				.build();
-		return writer;
+	class BillRowMapper implements RowMapper<Bill> {
+		@Override
+		public Bill mapRow(ResultSet rs, int rowNum) throws SQLException {
+			return new Bill(rs.getLong("id")
+					, rs.getString("first_name")
+					, rs.getString("last_name")
+					, rs.getLong("minutes")
+					, rs.getLong("data_usage")
+					, rs.getDouble("bill_amount"));
+		}
+
 	}
 
 	@Bean
