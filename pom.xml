@@ -23,7 +23,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
         <docker.org>showpune</docker.org>
-        <docker.version>007.SNAPSHOT</docker.version>
+        <docker.version>008.SNAPSHOT</docker.version>
         <prometheus-rsocket-spring.version>1.3.0</prometheus-rsocket-spring.version>
         <spring-cloud-task-dependencies.version>2.3.0</spring-cloud-task-dependencies.version>
     </properties>
