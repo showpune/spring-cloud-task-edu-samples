@@ -88,7 +88,11 @@
             <groupId>io.micrometer.prometheus</groupId>
             <artifactId>prometheus-rsocket-client</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 </project>
