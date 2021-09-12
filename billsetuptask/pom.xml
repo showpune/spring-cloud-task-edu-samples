@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>spring-cloud-task-edu-samples</artifactId>
+        <groupId>io.spring</groupId>
+        <version>0.0.4-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>billsetuptask</artifactId>
+    <name>Bill Setup Task</name>
+    <description>Spring Cloud Task to create BILL_STATEMENTS table</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-task</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+
+        <dependency>
+            <groupId>io.micrometer.prometheus</groupId>
+            <artifactId>prometheus-rsocket-spring</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.micrometer.prometheus</groupId>
+                    <artifactId>prometheus-rsocket-proxy-server</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--
+                                 <dependency>
+                                     <groupId>io.projectreactor</groupId>
+                                     <artifactId>reactor-core</artifactId>
+                                     <version>3.4.6</version>
+                                 </dependency>
+                                 <dependency>
+                                     <groupId>io.rsocket</groupId>
+                                     <artifactId>rsocket-core</artifactId>
+                                     <version>1.1.1</version>
+                                 </dependency>
+                                 <dependency>
+                                     <groupId>io.rsocket</groupId>
+                                     <artifactId>rsocket-transport-netty</artifactId>
+                                     <version>1.1.1</version>
+                                 </dependency>
+                                 <dependency>
+                                     <groupId>io.netty</groupId>
+                                     <artifactId>netty-handler</artifactId>
+                                     <version>4.1.67.Final</version>
+                                 </dependency>
+                                 -->
+
+    </dependencies>
+
+
+</project>
