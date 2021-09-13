@@ -54,6 +54,12 @@
             <groupId>io.micrometer.prometheus</groupId>
             <artifactId>prometheus-rsocket-spring</artifactId>
             <version>${prometheus-rsocket-spring.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.micrometer.prometheus</groupId>
+                    <artifactId>prometheus-rsocket-proxy-server</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>

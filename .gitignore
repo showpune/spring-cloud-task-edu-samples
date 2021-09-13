@@ -1,3 +1,7 @@
 # Project exclude paths
 /billrun/target/
 /billsetuptask/target/
+/billrun/.mvn/
+/billsetuptask/.mvn/
+/.mvn/
+/.idea/
